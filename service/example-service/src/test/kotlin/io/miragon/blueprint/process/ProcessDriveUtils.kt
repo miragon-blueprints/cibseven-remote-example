@@ -6,7 +6,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.cibseven.bpm.engine.ProcessEngine
 import org.cibseven.bpm.engine.runtime.ProcessInstance
 
-/** Worker id the tests lock external tasks with — stands in for the remote `example-service`. */
+/** Worker id the tests lock external tasks with — stands in for the remote worker. */
 private const val TEST_WORKER = "test-worker"
 
 /** Lock duration for tests; irrelevant because tasks are completed immediately after locking. */

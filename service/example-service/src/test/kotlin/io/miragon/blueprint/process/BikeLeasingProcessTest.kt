@@ -5,30 +5,27 @@ import io.miragon.blueprint.process.BikeLeasingProcessProcessApi.Messages
 import io.miragon.blueprint.process.BikeLeasingProcessProcessApi.ServiceTasks
 import io.miragon.blueprint.process.BikeLeasingProcessProcessApi.Variables
 import org.cibseven.bpm.engine.ProcessEngine
+import org.cibseven.bpm.engine.impl.cfg.StandaloneInMemProcessEngineConfiguration
 import org.cibseven.bpm.engine.test.assertions.bpmn.BpmnAwareTests.assertThat
 import org.cibseven.bpm.engine.test.assertions.bpmn.BpmnAwareTests.init
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.context.ActiveProfiles
 import java.util.UUID
 
 /**
- * Process-model behaviour test for the deployed `bike-leasing` model — the **remote** counterpart to
- * the embedded blueprint's process test. It runs against the engine host's own in-memory engine, with
- * no worker or business logic present: the service tasks are **external tasks**, so the test completes
- * each one explicitly by topic via [completeExternalTask] (supplying the output variables a real worker
- * would return), while user tasks, messages and timers are released explicitly.
+ * Process-model behaviour test for the `bike-leasing` model — it lives with the **process owner**
+ * (this service), which also owns and deploys the model. Because the worker embeds no engine, the test
+ * spins up a fresh **standalone in-memory engine** per test and deploys the model from `common-package`.
  *
- * It therefore verifies the *topology* — routing, gateways, compensation, the event sub-process, the
- * DMN and the timers — independent of what the workers actually do with each task.
+ * The service tasks are **external tasks**, so the test completes each one explicitly by topic via
+ * [completeExternalTask] (supplying the output variables a real worker would return); user tasks,
+ * messages and timers are released explicitly. It therefore verifies the *topology* — routing,
+ * gateways, compensation, the event sub-process, the DMN and the timers — independent of what the
+ * workers actually do with each task.
  */
-@SpringBootTest
-@ActiveProfiles("test")
 class BikeLeasingProcessTest {
 
-    @Autowired
     private lateinit var engine: ProcessEngine
 
     /** Output of the `orderBike` external task when the requested bike is available. */
@@ -39,7 +36,24 @@ class BikeLeasingProcessTest {
 
     @BeforeEach
     fun setUp() {
+        // The job executor stays off by default, so the test drives async continuations by hand.
+        engine = StandaloneInMemProcessEngineConfiguration().apply {
+            jdbcUrl = "jdbc:h2:mem:bikeleasing-process-${UUID.randomUUID()};DB_CLOSE_DELAY=1000"
+        }.buildProcessEngine()
+
+        // The process owner deploys its own model — here from `common-package` on the classpath.
+        engine.repositoryService.createDeployment()
+            .addClasspathResource("bpmn/bike-leasing.bpmn")
+            .addClasspathResource("bpmn/cancel-bike-order.bpmn")
+            .addClasspathResource("dmn/check-credit-rating.dmn")
+            .deploy()
+
         init(engine)
+    }
+
+    @AfterEach
+    fun tearDown() {
+        engine.close()
     }
 
     @Test

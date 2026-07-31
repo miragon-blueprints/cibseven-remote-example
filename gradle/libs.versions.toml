@@ -54,6 +54,9 @@ h2 = { module = "com.h2database:h2", version = "2.4.240" }
 # Process test — CIB seven
 cib7-bpm-assert = { module = "org.cibseven.bpm:cibseven-bpm-assert", version.ref = "cib7_version" }
 cib7-bpm-junit5 = { module = "org.cibseven.bpm:cibseven-bpm-junit5", version.ref = "cib7_version" }
+# The engine core — cibseven-bpm-assert declares it as `provided`, so a service without an engine
+# starter (the remote worker) must bring it explicitly for its standalone in-memory process tests.
+cib7-engine = { module = "org.cibseven.bpm:cibseven-engine", version.ref = "cib7_version" }
 
 # JGiven — CIB seven
 cib7-bpm-jgiven = { module = "org.cibseven.community:cibseven-bpm-jgiven", version.ref = "cib7_jgiven_version" }
@@ -68,7 +71,7 @@ externalTaskClient = ["cib7-external-task-client", "jakarta-xml-bind-api"]
 test = ["spring_test", "spring_web_test", "spring_data_jpa_test", "mockito", "mockk", "spring_mockk", "kotlin_mockito"]
 archunit = ["archunit"]
 konsist = ["konsist"]
-cib7ProcessTest = ["cib7-bpm-assert", "cib7-bpm-junit5", "h2"]
+cib7ProcessTest = ["cib7-bpm-assert", "cib7-bpm-junit5", "cib7-engine", "h2"]
 cib7JGiven = ["cib7-bpm-jgiven", "cib7-bpm-junit5", "jgiven-kotlin", "jgiven-junit5"]
 
 [plugins]

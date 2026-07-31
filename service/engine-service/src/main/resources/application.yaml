@@ -21,12 +21,11 @@ camunda:
     admin-user:
       id: admin
       password: admin
-    # Deploy BPMN, DMN and Camunda Forms from the classpath — `classpath*:` also scans the
-    # `common-package` jar, which owns the process contract.
-    deployment-resource-pattern:
-      - classpath*:**/*.bpmn
-      - classpath*:**/*.dmn
-      - classpath*:**/*.form
+    # This engine ships no model of its own — the `example-service` deploys the process over REST at
+    # start-up (it owns the process). An empty pattern disables the starter's default classpath
+    # auto-deployment. To switch to the "engine owns the model" pattern, depend on `common-package` and
+    # restore the classpath pattern (see this module's README).
+    deployment-resource-pattern: []
     webapp:
       application-path: /camunda
     database:

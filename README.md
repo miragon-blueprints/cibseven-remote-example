@@ -4,8 +4,9 @@ A ready-to-fork **starting point** for automating a business process on
 [CIB seven](https://cibseven.org) (the community fork of Camunda 7) with a **remote engine**,
 Spring Boot and Kotlin. Same MiraVelo bike-leasing scenario as the embedded
 [`cibseven-embedded-example`](https://github.com/miragon-blueprints/cibseven-embedded-example) — the
-**opposite topology**: the engine only *hosts and deploys* the process, while all service-task logic
-runs in a separate worker as **external tasks** over the engine's REST API.
+**opposite topology**: the engine is a generic host, while a separate worker **owns the process**,
+deploys it into the engine, and runs all service-task logic as **external tasks** over the engine's
+REST API.
 
 ## The scenario
 
@@ -44,8 +45,9 @@ event sub-process** (application withdrawal) and a **terminate end event**.
 service/
   common-architecture-tests/   reusable ArchUnit + Konsist rule suite (src/main)
   common-package/              THE CONTRACT: BPMN/DMN/forms + generated *ProcessApi (bpmn-to-code)
-  engine-service/              CIB seven engine host — deploys the model, exposes /engine-rest (:8081)
-  example-service/             the worker + business logic (hexagonal), :8082
+  engine-service/              generic CIB seven engine host — /engine-rest + Cockpit, no model (:8081)
+  example-service/             the worker; OWNS + deploys the process; business logic (hexagonal), :8082
+    ProcessModelDeployer        deploys the model into the remote engine at start-up (over REST)
     adapter/inbound/rest        domain REST controllers
     adapter/inbound/cibseven    external-task workers (subscribe to the BPMN topics)
     adapter/outbound/engine     drives the remote engine via RestClient
@@ -63,9 +65,13 @@ stack/                         Postgres dev stack (docker compose)
   `libs.versions.toml` version catalog.
 - **The contract, once:** `common-package` owns the `.bpmn`/`.dmn`/`.form` models and the
   [`bpmn-to-code`](https://github.com/emaarco/bpmn-to-code)-generated `*ProcessApi` (process id,
-  element ids, messages, timers, variables and **external-task topics**). `engine-service` deploys
-  those models; `example-service` references the same topics and message names — one source of truth,
-  no drift between the engine and the worker.
+  element ids, messages, timers, variables and **external-task topics**). The `example-service`
+  references the same topics and message names — one source of truth, no drift between model and worker.
+- **Who owns and deploys the model:** the `example-service` **owns the process** and deploys it into the
+  remote engine at start-up (`ProcessModelDeployer`, idempotent via `enable-duplicate-filtering`), so the
+  engine stays a generic, model-agnostic host. This is the right default when a **single service** owns
+  the process. The alternative — the **engine** carrying the model, for a process fulfilled by *several*
+  services — is documented in [`service/engine-service/README.md`](service/engine-service/README.md).
 
 ## How the remote wiring works
 
@@ -91,10 +97,12 @@ stack/                         Postgres dev stack (docker compose)
 # 1. start Postgres (creates the engine DB and the worker's domain DB)
 docker compose -f stack/docker-compose.yml up -d
 
-# 2. start the engine host — Cockpit/Tasklist at http://localhost:8081/camunda (admin/admin)
+# 2. start the (model-agnostic) engine host first — Cockpit/Tasklist at
+#    http://localhost:8081/camunda (admin/admin)
 ./gradlew :service:engine-service:bootRun
 
-# 3. start the worker (in a second shell)
+# 3. start the worker (in a second shell) — it deploys the process into the engine at start-up,
+#    so the engine must already be running
 ./gradlew :service:example-service:bootRun
 
 # 4. lint the BPMN models
@@ -129,11 +137,11 @@ http://localhost:8081/camunda.
 - **Model validation** (`bpmn-to-code-testing`) checks the `.bpmn` models structurally at build time in
   `common-package` — including a custom rule that every service task must be an **external task with a
   topic** (the remote counterpart to the embedded delegate-expression rule).
-- **Process tests** (`cibseven-bpm-assert`, in `engine-service`) drive the deployed model on an
-  in-memory engine and assert the *topology* — happy-path, escalation, DMN rejection, abort/compensation
-  and the bike-unavailable → alternative loop. Service tasks are **external tasks**, so the test fetches,
-  locks and completes them (supplying the output variables a real worker would return); user tasks,
-  messages and timers are released by hand.
+- **Process tests** (`cibseven-bpm-assert`, in `example-service` — with the process owner) spin up a
+  standalone in-memory engine, deploy the model from `common-package`, and assert the *topology* —
+  happy-path, escalation, DMN rejection, abort/compensation and the bike-unavailable → alternative loop.
+  Service tasks are **external tasks**, so the test completes each one explicitly by topic (supplying the
+  output variables a real worker would return); user tasks, messages and timers are released by hand.
 - **Bruno + CI** proves the same scenarios against the *running* pair of apps: domain REST endpoints
   (`:8082`) drive the business actions, and the CIB seven `/engine-rest` API (`:8081`) completes user
   tasks and fires timer jobs so the whole flow runs in the pipeline without real 14-day waits.

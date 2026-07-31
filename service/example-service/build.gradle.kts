@@ -23,6 +23,8 @@ dependencies {
     runtimeOnly(libs.jaxb.runtime)
     testImplementation(libs.bundles.test)
     testImplementation(libs.h2)
+    // Standalone in-memory engine for the process-model behaviour test (this service owns the model).
+    testImplementation(libs.bundles.cib7ProcessTest)
     testImplementation(project(":service:common-architecture-tests"))
 }
 

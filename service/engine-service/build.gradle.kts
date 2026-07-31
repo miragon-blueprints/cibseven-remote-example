@@ -16,24 +16,19 @@ configurations.all {
 }
 
 /**
- * The engine host. It only runs the CIB seven engine and *deploys* the process contract from
- * `common-package` (BPMN/DMN/forms are picked up from that module's jar via the classpath deployment
- * pattern). It carries no business logic: the service tasks are external tasks handled remotely by the
- * `example-service` worker. Cockpit/Tasklist are exposed at `/camunda`.
+ * The engine host: a **model-agnostic** CIB seven engine. It runs the engine and exposes
+ * `/engine-rest` + Cockpit/Tasklist at `/camunda`, but ships **no** process model of its own — the
+ * `example-service` (which owns the process) deploys the model into it over REST at start-up.
+ *
+ * It therefore has no dependency on `common-package`. To switch to the alternative "engine owns the
+ * model" pattern (a shared process fulfilled by several services), add
+ * `implementation(project(":service:common-package"))` here and the deployment-resource-pattern in
+ * `application.yaml` — see this module's README.
  */
 dependencies {
-    implementation(project(":service:common-package"))
     implementation(libs.bundles.defaultService)
     implementation(libs.bundles.database)
     implementation(libs.bundles.cibseven)
-    testImplementation(libs.bundles.test)
-    testImplementation(libs.bundles.cib7ProcessTest)
-}
-
-tasks.test {
-    useJUnitPlatform()
-    // Each process test drives a fresh in-memory engine; fork per test class to isolate engine state.
-    forkEvery = 1
 }
 
 tasks.withType<BootJar> {
