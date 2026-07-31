@@ -1,0 +1,36 @@
+spring:
+  main:
+    # The process tests drive the engine directly (no /engine-rest servlet needed).
+    web-application-type: none
+    allow-bean-definition-overriding: true
+  autoconfigure:
+    # The engine-rest (Jersey) API needs a servlet web context, which the process tests don't start.
+    exclude:
+      - org.cibseven.bpm.spring.boot.starter.rest.CamundaBpmRestJerseyAutoConfiguration
+  datasource:
+    url: jdbc:h2:mem:engine-test;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+
+camunda:
+  bpm:
+    admin-user:
+      id: admin
+      password: admin
+    database:
+      type: h2
+      schema-update: true
+    # The tests fire async continuations, external tasks and timers by hand.
+    job-execution:
+      enabled: false
+    webapp:
+      enabled: false
+    deployment-resource-pattern:
+      - classpath*:**/*.bpmn
+      - classpath*:**/*.dmn
+      - classpath*:**/*.form
