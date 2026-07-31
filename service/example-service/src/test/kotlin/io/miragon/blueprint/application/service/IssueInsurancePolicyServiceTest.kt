@@ -17,11 +17,14 @@ class IssueInsurancePolicyServiceTest {
 
     @Test
     fun `issuePolicy delegates to the insurer`() {
+
         // given: an eligible application
         val application = testLeasingApplication()
         every { insurance.issuePolicy(application.id) } just Runs
+
         // when: the policy is issued
         underTest.issuePolicy(application.id)
+
         // then: the insurance out-port binds the policy
         verify { insurance.issuePolicy(application.id) }
         confirmVerified(insurance)

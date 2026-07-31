@@ -16,11 +16,14 @@ class RequestOrderCancellationServiceTest {
 
     @Test
     fun `requestCancellation asks the dealer and returns its answer`() {
+
         // given: a placed order the dealer allows cancelling
         val orderId = OrderId("ORDER-900")
         every { bikeDealer.requestCancellation(orderId) } returns true
+
         // when: the dealer is asked whether it can be cancelled
         val possible = underTest.requestCancellation(orderId)
+
         // then: the dealer's answer is returned
         assertThat(possible).isTrue()
         verify { bikeDealer.requestCancellation(orderId) }

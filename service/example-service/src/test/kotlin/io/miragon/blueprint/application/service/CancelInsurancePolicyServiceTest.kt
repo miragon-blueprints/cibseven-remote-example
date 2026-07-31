@@ -17,11 +17,14 @@ class CancelInsurancePolicyServiceTest {
 
     @Test
     fun `cancelPolicy delegates the compensation to the insurer`() {
+
         // given: an application whose policy must be revoked
         val application = testLeasingApplication()
         every { insurance.cancelPolicy(application.id) } just Runs
+
         // when: the policy is cancelled
         underTest.cancelPolicy(application.id)
+
         // then: the insurance out-port revokes the policy
         verify { insurance.cancelPolicy(application.id) }
         confirmVerified(insurance)

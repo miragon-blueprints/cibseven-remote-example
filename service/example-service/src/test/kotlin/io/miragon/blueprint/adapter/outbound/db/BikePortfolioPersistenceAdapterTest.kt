@@ -40,6 +40,7 @@ class BikePortfolioPersistenceAdapterTest {
     fun `findByBikeId returns null when the bike is not in the portfolio`() {
 
         // given: an empty portfolio
+
         // when / then: the lookup returns null
         assertThat(underTest.findByBikeId(BikeId("BIKE-000"))).isNull()
     }

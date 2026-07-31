@@ -44,6 +44,7 @@ class LeasingApplicationPersistenceAdapterTest {
     fun `findById returns null when the application does not exist`() {
 
         // given: an empty database
+
         // when / then: the lookup returns null
         assertThat(underTest.findById(id)).isNull()
     }
@@ -53,6 +54,7 @@ class LeasingApplicationPersistenceAdapterTest {
     fun `findById maps an existing row back to the domain`() {
 
         // given: a pre-inserted row (see sql/leasing-application.sql)
+
         // when / then: the adapter maps it back to the expected application
         assertThat(underTest.findById(id))
             .usingRecursiveComparison()

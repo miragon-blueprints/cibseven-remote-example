@@ -17,11 +17,14 @@ class BookCancellationCostsServiceTest {
 
     @Test
     fun `bookCosts delegates the cost booking to the dealer`() {
+
         // given: a placed order
         val orderId = OrderId("ORDER-900")
         every { bikeDealer.bookCancellationCosts(orderId) } just Runs
+
         // when: the costs are booked
         underTest.bookCosts(orderId)
+
         // then: the dealer out-port books the cancellation costs
         verify { bikeDealer.bookCancellationCosts(orderId) }
         confirmVerified(bikeDealer)
