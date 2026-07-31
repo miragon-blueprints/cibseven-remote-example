@@ -12,7 +12,7 @@ This blueprint deliberately supports both; pick the one that matches your realit
 ### Pattern A — the *service* owns and deploys the model (this repo's default)
 
 The `example-service` owns the process and deploys it into this engine over REST at start-up (see
-`ProcessModelDeployer`, idempotent via `enable-duplicate-filtering`). This engine stays generic and
+`ProcessModelDeploymentAdapter`, idempotent via `enable-duplicate-filtering`). This engine stays generic and
 knows nothing about `bike-leasing`.
 
 - **Use when** the process is fulfilled by a **single service** — ownership, the model and the workers
@@ -46,7 +46,7 @@ To switch to Pattern B:
          - classpath*:**/*.dmn
          - classpath*:**/*.form
    ```
-3. Remove `ProcessModelDeployer` from `example-service` so the model is not deployed twice.
+3. Remove `ProcessModelDeploymentAdapter` from `example-service` so the model is not deployed twice.
 
 ## Tests
 

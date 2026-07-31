@@ -1,4 +1,4 @@
-package io.miragon.blueprint
+package io.miragon.blueprint.adapter.outbound.engine
 
 import mu.KotlinLogging
 import org.springframework.boot.context.event.ApplicationReadyEvent
@@ -6,8 +6,8 @@ import org.springframework.context.event.EventListener
 import org.springframework.core.io.Resource
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver
 import org.springframework.http.MediaType
-import org.springframework.util.LinkedMultiValueMap
 import org.springframework.stereotype.Component
+import org.springframework.util.LinkedMultiValueMap
 import org.springframework.web.client.RestClient
 
 /**
@@ -15,17 +15,17 @@ import org.springframework.web.client.RestClient
  * engine at start-up — the remote counterpart to the embedded engine's classpath auto-deployment.
  *
  * This realises the "the service owns and deploys its process" ownership pattern: the engine host stays
- * model-agnostic and this service pushes its BPMN/DMN/forms to `POST /engine-rest/deployment/create`.
- * The deployment is **idempotent** (`enable-duplicate-filtering` + `deploy-changed-only`), so restarts
- * and multiple worker instances never create duplicate deployments. It retries briefly so the worker
- * can start alongside a not-yet-ready engine.
+ * model-agnostic and this outbound adapter pushes its BPMN/DMN/forms to
+ * `POST /engine-rest/deployment/create`. The deployment is **idempotent** (`enable-duplicate-filtering`
+ * + `deploy-changed-only`), so restarts and multiple worker instances never create duplicate
+ * deployments. It retries briefly so the worker can start alongside a not-yet-ready engine.
  *
  * (For the alternative "the engine owns the model" pattern — a shared process fulfilled by several
  * services — remove this bean and let the engine deploy from its own classpath; see the engine-service
  * README.)
  */
 @Component
-class ProcessModelDeployer(
+class ProcessModelDeploymentAdapter(
     private val engineRestClient: RestClient,
 ) {
 

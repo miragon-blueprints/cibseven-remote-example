@@ -47,10 +47,9 @@ service/
   common-package/              THE CONTRACT: BPMN/DMN/forms + generated *ProcessApi (bpmn-to-code)
   engine-service/              generic CIB seven engine host — /engine-rest + Cockpit, no model (:8081)
   example-service/             the worker; OWNS + deploys the process; business logic (hexagonal), :8082
-    ProcessModelDeployer        deploys the model into the remote engine at start-up (over REST)
     adapter/inbound/rest        domain REST controllers
     adapter/inbound/cibseven    external-task workers (subscribe to the BPMN topics)
-    adapter/outbound/engine     drives the remote engine via RestClient
+    adapter/outbound/engine     deploys the model + drives the remote engine via RestClient
     adapter/outbound/db         JPA persistence (leasing applications + bike portfolio)
     adapter/outbound/dealer     simulated bike dealer (stock check + order)
     application/{port,service}  use-case ports and their services
@@ -68,7 +67,7 @@ stack/                         Postgres dev stack (docker compose)
   element ids, messages, timers, variables and **external-task topics**). The `example-service`
   references the same topics and message names — one source of truth, no drift between model and worker.
 - **Who owns and deploys the model:** the `example-service` **owns the process** and deploys it into the
-  remote engine at start-up (`ProcessModelDeployer`, idempotent via `enable-duplicate-filtering`), so the
+  remote engine at start-up (`ProcessModelDeploymentAdapter`, idempotent via `enable-duplicate-filtering`), so the
   engine stays a generic, model-agnostic host. This is the right default when a **single service** owns
   the process. The alternative — the **engine** carrying the model, for a process fulfilled by *several*
   services — is documented in [`service/engine-service/README.md`](service/engine-service/README.md).
