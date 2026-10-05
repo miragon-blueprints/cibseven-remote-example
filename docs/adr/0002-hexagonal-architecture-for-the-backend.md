@@ -1,7 +1,7 @@
 # 0002 — Hexagonal architecture for the backend
 
 - **Status:** Accepted
-- **Date:** 2026-08-18
+- **Date:** 2026-10-05
 
 ## Context
 
@@ -16,7 +16,7 @@ a forker (or an AI agent) cannot quietly erode it.
 
 We structure `service/example-service` as a **hexagon (ports & adapters)** under `io.miragon.blueprint`:
 
-- `domain/` — pure Kotlin value objects and aggregates; no framework imports.
+- `domain/` — pure Java records (value objects and aggregates); no framework imports.
 - `application/port/inbound` — one **`*UseCase`** (state-changing) or **`*Query`** (read) interface per
   operation. `application/port/outbound` — **`*Repository` / `*Port` / `*Process`** interfaces.
 - `application/service` — one `*Service` implementing exactly one inbound port; it may not call another
@@ -28,9 +28,9 @@ We structure `service/example-service` as a **hexagon (ports & adapters)** under
 - `process/` — the **generated** `*ProcessApi` (bpmn-to-code: topics, messages, element ids, variables);
   a technical seam that fits neither side of the split.
 
-These rules are **enforced by the reusable ArchUnit + Konsist suite** in
-`service/common-architecture-tests`, wired into every module's tests so `./gradlew build` fails on a
-violation:
+These rules are **enforced by the reusable ArchUnit suite** in `service/common-architecture-tests`,
+wired into the worker's tests, plus a small set of Checkstyle source rules — so `./mvnw verify` fails
+on a violation:
 
 - `HexagonalArchitectureTest` — the layered-dependency graph (domain depends on nothing; ports are
   interfaces; an in-adapter offers exactly one use-case; out-adapters never touch inbound ports).
@@ -38,8 +38,11 @@ violation:
   `PersistenceAdapter`, `UseCase`, `Query`, …).
 - There is deliberately **no `config` package**; Spring configuration lives beside the adapter it
   configures.
-- The generated `process/` package is **explicitly excluded** from both suites — it is machine-written
-  and does not follow the hand-written conventions.
+- The generated `process/` package is **explicitly excluded** from both ArchUnit suites — it is
+  machine-written and does not follow the hand-written conventions.
+- Checkstyle (`config/checkstyle/source-guidelines.xml`) — the source-structure rules the bytecode
+  cannot carry: one top-level type per file, no wildcard imports (see
+  [ADR-0014](0014-archunit-and-checkstyle.md)).
 
 ## Consequences
 

@@ -13,10 +13,10 @@ archive = "docker compose -f stack/docker-compose.yml down -v || true"
 command = "docker compose -f stack/docker-compose.yml up"
 
 [scripts.run.backend]
-command = "./gradlew :service:example-service:bootRun"
+command = "./mvnw -pl service/example-service -am spring-boot:run"
 
 [scripts.run.test]
-command = "./gradlew build"
+command = "./mvnw verify"
 
 [scripts.run.smoke]
 command = "cd bruno && npx --yes @usebruno/cli run . --env local -r"

@@ -1,14 +1,14 @@
 # 0011 — Build and deployment approach: OCI images + one-command stack
 
 - **Status:** Accepted
-- **Date:** 2026-08-20
+- **Date:** 2026-10-05
 
 ## Context
 
 `stack/docker-compose.yml` started **only Postgres**. There was no artifact for the apps themselves, so
 the "build & deployment" dimension every template in this family names was empty: a fork could run the
-dev loop (`bootRun` the engine host, then the worker) but had no answer to *"how do I ship this as
-containers?"*. The template aims to be production-shaped
+dev loop (`spring-boot:run` the engine host, then the worker) but had no answer to *"how do I ship this
+as containers?"*. The template aims to be production-shaped
 ([ADR-0008](0008-track-the-latest-major-versions.md),
 [ADR-0009](0009-actuator-probes-and-prometheus-metrics.md),
 [ADR-0010](0010-flyway-for-database-migrations.md)), so it should hand a fork runnable images and a
@@ -16,20 +16,27 @@ one-command stack, not just a database.
 
 The shaping force is simple: **both deployable units are Spring Boot 4 apps** — the model-agnostic
 engine host (`engine-service`) and the worker (`example-service`). This is a **headless** blueprint, so
-there is no frontend to package, no SPA to serve, and no reverse proxy to stand up. Spring's Gradle
+there is no frontend to package, no SPA to serve, and no reverse proxy to stand up. Spring Boot's Maven
 plugin can build an OCI image directly from each fat jar with Cloud Native Buildpacks — no Dockerfile to
 write or keep in sync with the JDK.
 
 ## Decision
 
-We produce an **OCI image per Spring Boot app with `bootBuildImage`** (buildpacks, no Dockerfile) and a
-**compose stack** that runs **Postgres + engine-service + example-service** with one command.
+We produce an **OCI image per Spring Boot app with the `spring-boot-maven-plugin`'s buildpacks support** (no
+Dockerfile) and a **compose stack** that runs **Postgres + engine-service + example-service** with one
+command.
 
-- **Images** — `./gradlew :service:engine-service:bootBuildImage` and
-  `./gradlew :service:example-service:bootBuildImage` build the two images (`bootBuildImage.imageName`
-  in each module's `build.gradle.kts`, JVM pinned via `BP_JVM_VERSION=21`). Buildpacks give layered,
-  non-root images with no Dockerfile to maintain. A hand-written Dockerfile would only be justified if we
-  needed control buildpacks can't give; we don't.
+- **Images** — `./mvnw -pl service/engine-service -DskipTests package spring-boot:build-image-no-fork` and
+  `./mvnw -pl service/example-service -am -DskipTests package spring-boot:build-image-no-fork` build the two images
+  (`miravelo/engine-service:<version>` / `miravelo/example-service:<version>`; the `<image>`
+  configuration of the `spring-boot-maven-plugin` in each app's `pom.xml`, JVM pinned via
+  `BP_JVM_VERSION=${java.version}`, i.e. 21). `spring-boot.build-image.skip` is `true` in the root
+  `pom.xml` and `false` only in the two apps, so the `-am` reactor run images just the app. The
+  non-forking `build-image-no-fork` goal after an explicit `package` is deliberate: the forking
+  `build-image` goal packages the shared modules in a forked lifecycle the reactor cannot see, so Maven
+  would look them up in `~/.m2` instead. Buildpacks
+  give layered, non-root images with no Dockerfile to maintain. A hand-written Dockerfile would only be
+  justified if we needed control buildpacks can't give; we don't.
 - **Stack ordering** — the worker owns the process and **deploys the model into the engine at
   start-up**, so the compose stack starts Postgres first (named volume + `pg_isready` healthcheck),
   then the engine host, then the worker (which waits for the engine's `/engine-rest` to be ready).
@@ -43,9 +50,9 @@ We produce an **OCI image per Spring Boot app with `bootBuildImage`** (buildpack
 
 ## Consequences
 
-- **Positive:** `bootBuildImage` on both modules + `docker compose … up` brings up a runnable system —
-  engine, worker, and DB — with no Dockerfile to maintain and no reverse proxy on the request path. The
-  build & deployment dimension is now filled.
+- **Positive:** one image build per app + `docker compose … up` brings up a runnable
+  system — engine, worker, and DB — with no Dockerfile to maintain and no reverse proxy on the request
+  path. The build & deployment dimension is now filled.
 - **Negative / trade-offs:** with **podman** the buildpack step needs a Docker-API socket
   (`podman system service` + `DOCKER_HOST`). The images are **not production-hardened** — they carry the
   dev admin/admin credentials from `application.yaml`, which a real deployment must override.

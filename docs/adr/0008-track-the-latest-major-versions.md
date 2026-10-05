@@ -1,12 +1,12 @@
 # 0008 — Deliberately track the latest major versions
 
 - **Status:** Accepted
-- **Date:** 2026-08-20
+- **Date:** 2026-10-05
 
 ## Context
 
-The stack sits on the newest major of nearly everything at once — Spring Boot 4, Kotlin 2.x on the
-CIB seven Spring-Boot-4 line, CIB seven 2.2. That is a real choice with a real cost: newest majors have
+The stack sits on the newest major of nearly everything at once — Spring Boot 4 on the CIB seven
+Spring-Boot-4 line, CIB seven 2.2. That is a real choice with a real cost: newest majors have
 smaller ecosystems, more breaking-change churn, and occasionally force an integration workaround (e.g.
 excluding the non-SB4 CIB seven webclient so the engine host starts on Spring 7). A fork left untouched
 for months may need an upgrade pass before it builds again.
@@ -26,7 +26,8 @@ contracts, linting) are meant to enable. A template pinned to yesterday's versio
 the capabilities and the starting point we actually recommend.
 
 Mechanics that make this safe rather than reckless: dependency updates are automated (Dependabot), every
-version is exact-pinned in the `gradle/libs.versions.toml` catalog, and each bump runs the full gate set
+version is exact-pinned (by the Spring Boot parent's BOM, or in the root `pom.xml` `<properties>` for
+everything the BOM does not manage), and each bump runs the full gate set
 (build, architecture tests, mutation ≥ 80, contract drift), so updates can be taken continuously instead
 of in a scary big-bang. Bleeding-edge workarounds are documented at the point of use.
 

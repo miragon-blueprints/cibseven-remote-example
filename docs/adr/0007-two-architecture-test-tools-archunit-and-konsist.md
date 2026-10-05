@@ -1,6 +1,6 @@
 # 0007 — Two architecture-test tools: ArchUnit (bytecode) and Konsist (source)
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR-0014](0014-archunit-and-checkstyle.md)
 - **Date:** 2026-08-20
 
 ## Context
