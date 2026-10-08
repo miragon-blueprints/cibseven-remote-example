@@ -6,6 +6,7 @@ import io.miragon.blueprint.application.port.outbound.LeasingApplicationReposito
 import io.miragon.blueprint.application.port.outbound.LeasingProcess
 import io.miragon.blueprint.domain.bike.Bike
 import io.miragon.blueprint.domain.bike.BikeId
+import io.miragon.blueprint.domain.leasing.ApplicationId
 import io.miragon.blueprint.domain.leasing.testLeasingApplication
 import io.mockk.Runs
 import io.mockk.confirmVerified
@@ -13,6 +14,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 
 class SelectAlternativeServiceTest {
@@ -60,6 +62,21 @@ class SelectAlternativeServiceTest {
         // then: neither the portfolio nor the application is touched, and the task is completed as declined
         verify { repository.findById(application.id) }
         verify { process.completeAlternativeClarification(application.id, false, null) }
+        confirmVerified(repository, bikePortfolio, process)
+    }
+
+    @Test
+    fun `an unknown application is reported with its id and nothing else happens`() {
+
+        // given: no application exists for the id
+        val unknown = ApplicationId.of("123e4567-e89b-12d3-a456-426614174000")
+        every { repository.findById(unknown) } returns null
+
+        // when/then: selecting an alternative names the missing application
+        assertThatThrownBy { underTest.selectAlternative(SelectAlternativeUseCase.Command(unknown, alternativeFound = false)) }
+            .isInstanceOf(IllegalStateException::class.java)
+            .hasMessage("Unknown application ApplicationId(value=123e4567-e89b-12d3-a456-426614174000)")
+        verify { repository.findById(unknown) }
         confirmVerified(repository, bikePortfolio, process)
     }
 }
