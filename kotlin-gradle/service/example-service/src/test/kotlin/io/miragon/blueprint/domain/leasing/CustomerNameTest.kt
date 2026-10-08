@@ -27,4 +27,11 @@ class CustomerNameTest {
         assertThatThrownBy { CustomerName("   ") }
             .isInstanceOf(IllegalArgumentException::class.java)
     }
+
+    @Test
+    fun `rejects a name made of no-break spaces`() {
+        // when/then: no-break spaces count as blank, too
+        assertThatThrownBy { CustomerName("\u00A0\u2007\u202F") }
+            .isInstanceOf(IllegalArgumentException::class.java)
+    }
 }

@@ -20,4 +20,11 @@ class OrderIdTest {
         assertThatThrownBy { OrderId("   ") }
             .isInstanceOf(IllegalArgumentException::class.java)
     }
+
+    @Test
+    fun `rejects an order id made of no-break spaces`() {
+        // when/then: no-break spaces count as blank, too
+        assertThatThrownBy { OrderId("\u00A0\u2007\u202F") }
+            .isInstanceOf(IllegalArgumentException::class.java)
+    }
 }

@@ -20,4 +20,11 @@ class BikeIdTest {
         assertThatThrownBy { BikeId("   ") }
             .isInstanceOf(IllegalArgumentException::class.java)
     }
+
+    @Test
+    fun `rejects a bike id made of no-break spaces`() {
+        // when/then: no-break spaces count as blank, too
+        assertThatThrownBy { BikeId("\u00A0\u2007\u202F") }
+            .isInstanceOf(IllegalArgumentException::class.java)
+    }
 }
