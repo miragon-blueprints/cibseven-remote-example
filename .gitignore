@@ -1,6 +1,7 @@
 .claude/logs/
 .gradle
 **/build/
+**/target/
 **/bin/
 !kotlin-gradle/gradle/wrapper/gradle-wrapper.jar
 **/jgiven-reports/
