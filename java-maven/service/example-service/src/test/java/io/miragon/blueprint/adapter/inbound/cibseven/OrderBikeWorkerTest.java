@@ -1,6 +1,8 @@
 package io.miragon.blueprint.adapter.inbound.cibseven;
 
 import io.miragon.blueprint.application.port.inbound.OrderBikeUseCase;
+import io.miragon.blueprint.domain.bike.BikeId;
+import io.miragon.blueprint.domain.bike.BikeUnavailableException;
 import io.miragon.blueprint.domain.bike.OrderId;
 import io.miragon.blueprint.domain.leasing.ApplicationId;
 import org.cibseven.bpm.client.task.ExternalTask;
@@ -9,11 +11,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
 import java.util.UUID;
 
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -29,23 +36,37 @@ class OrderBikeWorkerTest {
     @BeforeEach
     void stubBusinessKey() {
         when(task.getBusinessKey()).thenReturn(applicationId.value().toString());
+        when(task.getVariable("bikeId")).thenReturn("BIKE-900");
     }
 
     @Test
-    @DisplayName("completes with the order id and availability as output variables")
-    void completesWithTheOrderIdAndAvailabilityAsOutputVariables() {
+    @DisplayName("completes with the order id as output variable")
+    void completesWithTheOrderIdAsOutputVariable() {
 
         // given: the bike was available and an order was placed
-        when(useCase.orderBike(applicationId))
-                .thenReturn(new OrderBikeUseCase.Result(new OrderId("ORDER-1"), true));
+        when(useCase.orderBike(applicationId, new BikeId("BIKE-900"))).thenReturn(new OrderId("ORDER-1"));
 
         // when: the worker runs
         underTest.execute(task, service);
 
-        // then: the process continues with the `orderId` and `bikeAvailable` output variables
-        verify(service).complete(
-                eq(task),
-                argThat(it -> "ORDER-1".equals(it.get("orderId")) && Boolean.TRUE.equals(it.get("bikeAvailable")))
-        );
+        // then: the process continues with the `orderId` output variable and no BPMN error is raised
+        verify(service).complete(task, Map.of("orderId", "ORDER-1"));
+        verify(service, never()).handleBpmnError(any(ExternalTask.class), anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("raises the bikeUnavailable BPMN error when the dealer cannot deliver the bike")
+    void raisesTheBikeUnavailableBpmnErrorWhenTheDealerCannotDeliverTheBike() {
+
+        // given: the dealer has the bike out of stock
+        when(useCase.orderBike(applicationId, new BikeId("BIKE-900"))).thenThrow(new BikeUnavailableException(new BikeId("BIKE-OOS")));
+
+        // when: the worker runs
+        underTest.execute(task, service);
+
+        // then: the BPMN error is raised and the task is neither completed nor reported as a failure
+        verify(service).handleBpmnError(task, "bikeUnavailable", "Bike BIKE-OOS is not available at the dealer");
+        verify(service, never()).complete(any(ExternalTask.class), anyMap());
+        verify(service, never()).handleFailure(any(ExternalTask.class), anyString(), anyString(), anyInt(), anyLong());
     }
 }

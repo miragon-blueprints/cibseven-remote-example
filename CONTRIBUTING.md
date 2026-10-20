@@ -45,7 +45,8 @@ cd java-maven && ./mvnw -pl service/example-service -am spring-boot:run   # work
 |---|---|
 | Postgres (`bikeleasing_engine`, `bikeleasing_app`) | 5432 |
 | Engine host (`/engine-rest`) | 8081 |
-| CIB seven Cockpit / webapps | 8081/camunda (admin/admin) |
+| CIB seven webclient (new UI, entry point) | 8081/webapp (admin/admin) |
+| CIB seven Cockpit / Tasklist (classic) | 8081/camunda (admin/admin) |
 | Worker REST · OpenAPI spec · Swagger UI | 8082/api · 8082/v3/api-docs · 8082/swagger-ui.html |
 | Worker actuator (health · liveness/readiness · prometheus) | 8082/actuator |
 
@@ -62,7 +63,7 @@ curl -X POST http://localhost:8082/api/bike-leasing \
   -d '{ "customerName": "Ada", "email": "ada@example.com", "age": 35, "monthlyNetIncome": 3500, "bikeId": "BIKE-900", "bikeModel": "Gravel Explorer 900" }'
 ```
 
-Watch the external-task workers auto-complete `validateApplication`, `orderBike`, … in the
+Watch the external-task workers auto-complete `sendContract`, `orderBike`, … in the
 worker's log, and inspect the running instance in the CIB seven Cockpit at
 <http://localhost:8081/camunda> (admin/admin). Confirm <http://localhost:8082/swagger-ui.html> and
 <http://localhost:8082/actuator/health> (status `UP`) load. To exercise incidents/retries, submit the

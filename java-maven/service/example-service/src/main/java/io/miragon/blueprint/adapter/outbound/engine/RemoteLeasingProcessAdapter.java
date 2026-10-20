@@ -4,8 +4,8 @@ import io.miragon.blueprint.application.port.outbound.LeasingProcess;
 import io.miragon.blueprint.domain.bike.BikeId;
 import io.miragon.blueprint.domain.leasing.ApplicationId;
 import io.miragon.blueprint.domain.leasing.LeasingApplication;
-import io.miragon.blueprint.process.BikeLeasingProcessProcessApi.FlowNodes;
-import io.miragon.blueprint.process.Messages;
+import io.miragon.blueprint.adapter.process.BikeLeasingProcessProcessApi.FlowNodes;
+import io.miragon.blueprint.adapter.process.Messages;
 import org.cibseven.rest.client.api.MessageApi;
 import org.cibseven.rest.client.api.TaskApi;
 import org.cibseven.rest.client.model.CompleteTaskDto;
@@ -98,9 +98,8 @@ public class RemoteLeasingProcessAdapter implements LeasingProcess {
         String taskId = findTaskId(id, FlowNodes.UserTaskClarifyAlternative.ELEMENT_ID);
         Map<String, VariableValueDto> variables = new LinkedHashMap<>();
         variables.put(FlowNodes.UserTaskClarifyAlternative.Variables.ALTERNATIVE_FOUND.getValue(), typedVar(alternativeFound));
-        // The re-order reads the same start-injected bike variable, so reuse its name.
         if (bikeId != null) {
-            variables.put(FlowNodes.StartEventLeasingRequestReceived.Variables.BIKE_ID.getValue(), typedVar(bikeId.value()));
+            variables.put(FlowNodes.UserTaskClarifyAlternative.Variables.BIKE_ID.getValue(), typedVar(bikeId.value()));
         }
         taskApi.completeWithHttpInfo(taskId, new CompleteTaskDto().variables(variables));
         log.info("Completed clarify-alternative task ({}) for application {}", taskId, id.value());

@@ -39,7 +39,7 @@ service/
     adapter/outbound/engine     deploys the model and drives the remote engine via the generated client
     adapter/outbound/db         JPA persistence (leasing applications + bike portfolio)
     adapter/outbound/…          simulated dealer / contract / insurance / notification adapters
-    process                     generated *ProcessApi and shared constants (bpmn-to-code)
+    adapter/process             generated *ProcessApi and shared constants (bpmn-to-code)
     application/{port,service}  use-case ports and their services
     domain/{leasing,bike}       pure domain model
     resources/{bpmn,dmn,forms}  the process models and Camunda Forms the worker owns and deploys
@@ -55,7 +55,7 @@ The resources are kept identical to the other variant's; CI fails when they diff
 - **Service tasks are external tasks.** Every `<serviceTask>` in the model is `camunda:type="external"`
   with a topic (`bikeLeasing.<task>`). The worker subscribes with `@ExternalTaskSubscription` handlers
   that fetch, lock and complete them over `/engine-rest`. A handler that produces variables passes them
-  on `complete(...)`; `validateApplication` raises the `applicationInvalid` BPMN error.
+  on `complete(...)`; `orderBike` raises the `bikeUnavailable` BPMN error when the dealer has no bike.
 - **The worker owns and deploys the model.** `ProcessModelDeploymentAdapter` deploys the `.bpmn`, `.dmn`
   and `.form` files at start-up (idempotent through duplicate filtering), so the engine stays a generic
   host.
@@ -77,7 +77,7 @@ The resources are kept identical to the other variant's; CI fails when they diff
   no wildcard imports); the worker opts in with `class ArchitectureTest : ServiceArchitectureTest(...)`.
 - **Generated process API.** The `bpmn-to-code` Gradle plugin turns each `.bpmn` into a typed,
   node-centric `*ProcessApi` object, so element ids, topics, messages, variables and the paths the
-  process tests walk are compile-checked. Never hand-edit the `process` package.
+  process tests walk are compile-checked. Never hand-edit the `adapter/process` package.
 - **Unit tests** (JUnit 5 + MockK) cover every domain type, service and adapter — controllers via
   `@WebMvcTest`, persistence via `@DataJpaTest`, the engine adapter via `MockRestServiceServer`.
 - **Process tests** (`cibseven-bpm-assert`) run the model in a standalone in-memory engine: external
